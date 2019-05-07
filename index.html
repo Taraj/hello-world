@@ -1,0 +1,132 @@
+<!DOCTYPE HTML>
+<html lang="pl-Pl">
+
+<head>
+    <title>Grass-Man</title>
+    <meta charset="UTF-8">
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 238px;
+            flex-wrap: wrap;
+            text-align: center;
+            line-height: 30px;
+        }
+
+        .item {
+            cursor: pointer;
+            margin: 2px;
+            height: 30px;
+            width: 30px;
+            background-color: rgb(236, 234, 231);
+        }
+
+        .active {
+            background-color: green;
+        }
+    </style>
+
+</head>
+
+<body>
+    <input type="number" value="2017" id="year">
+    <div id="container" class="container">
+    </div>
+    <pre id="code">
+    </pre>
+    <script>
+
+        drawGrid(document.getElementById("year").value);
+        document.getElementById("year").addEventListener('change', () => {
+            drawGrid(document.getElementById("year").value);
+        })
+
+
+        function generateSingeCommit(day) {
+            const date = new Date();
+            date.setDate(date.getDate() - day);
+            const dateLocalString = date.toLocaleDateString();
+            return `
+                echo "${dateLocalString}" > file.txt
+                git add file.txt
+                git commit --date="${day} day ago" -m "${dateLocalString}"
+            `;
+        }
+
+        function isLeap(year) {
+            return new Date(year, 1, 29).getDate() === 29
+        }
+
+
+        function updateCode(array) {
+            let code = "";
+            array.forEach(element => {
+                code += generateSingeCommit(element);
+            });
+            document.getElementById("code").innerText = code;
+        }
+
+        function daysBetween(firstDate, secondDate) {
+            return Math.round(Math.abs((firstDate.getTime() - secondDate.getTime()) / 86400000));
+        }
+
+
+        function drawGrid(year) {
+            const selected = [];
+            updateCode(selected);
+            const container = document.getElementById("container");
+            container.innerHTML="";
+            for (let i = new Date(year, 0, 1).getDay() - 1 + isLeap(year - 1); i >= 0; i--) {
+                const square = document.createElement("div");
+                square.appendChild(document.createTextNode((365 - i)));
+                square.classList.add("item");
+                square.addEventListener('click', e => {
+
+                    const targetDate = new Date(year - 1, 0, 1);
+                    targetDate.setDate(targetDate.getDate() + (365 - i));
+
+                    const days = daysBetween(new Date(), targetDate)
+
+                    if (e.target.classList.toggle("active")) {
+                        selected.push(days);
+                    } else {
+                        for (let j = 0; j < selected.length; j++) {
+                            if (selected[j] == days) {
+                                selected.splice(j, 1);
+                                j--;
+                            }
+                        }
+                    }
+                    updateCode(selected);
+                });
+                container.appendChild(square);
+            }
+
+            for (let i = 1; i <= 365 + isLeap(year); i++) {
+                const square = document.createElement("div");
+                square.classList.add("item");
+                square.appendChild(document.createTextNode((i)))
+                square.addEventListener('click', e => {
+                    const targetDate = new Date(year, 0, 1);
+                    targetDate.setDate(targetDate.getDate() + i);
+                    const days = daysBetween(new Date(), targetDate)
+                    if (e.target.classList.toggle("active")) {
+                        selected.push(days);
+                    } else {
+                        for (let j = 0; j < selected.length; j++) {
+                            if (selected[j] === days) {
+                                selected.splice(j, 1);
+                                j--;
+                            }
+                        }
+                    }
+                    updateCode(selected);
+                });
+                container.appendChild(square);
+            }
+        }
+    </script>
+</body>
+
+</html>
